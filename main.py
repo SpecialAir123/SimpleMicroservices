@@ -159,6 +159,114 @@ def update_person(person_id: UUID, update: PersonUpdate):
     persons[person_id] = PersonRead(**stored)
     return persons[person_id]
 
+
+
+
+# -----------------------------------------------------------------------------
+# Allergy endpoints
+# -----------------------------------------------------------------------------
+@app.post("/allergies", response_model=AllergyRead, status_code=201)
+def create_allergy(allergy: AllergyCreate):
+    # Optional FK presence check (safe no-op if persons are empty for demos)
+    if getattr(allergy, "person_id", None) and allergy.person_id not in persons:
+        # Not fatal for a demo API; feel free to relax to a warning if you prefer
+        raise HTTPException(status_code=400, detail="person_id does not exist")
+    if allergy.id in allergies:
+        raise HTTPException(status_code=400, detail="Allergy with this ID already exists")
+    allergies[allergy.id] = AllergyRead(**allergy.model_dump())
+    return allergies[allergy.id]
+
+@app.get("/allergies", response_model=List[AllergyRead])
+def list_allergies(
+    person_id: Optional[UUID] = Query(None, description="Filter by person_id"),
+    allergen: Optional[str] = Query(None, description="Filter by allergen"),
+    allergy_type: Optional[str] = Query(None, description="Filter by allergy_type"),
+    severity: Optional[str] = Query(None, description="Filter by severity"),
+    noted_date: Optional[str] = Query(None, description="Filter by noted_date (YYYY-MM-DD)"),
+):
+    results = list(allergies.values())
+
+    if person_id is not None:
+        results = [a for a in results if a.person_id == person_id]
+    if allergen is not None:
+        results = [a for a in results if a.allergen == allergen]
+    if allergy_type is not None:
+        results = [a for a in results if a.allergy_type == allergy_type]
+    if severity is not None:
+        results = [a for a in results if a.severity == severity]
+    if noted_date is not None:
+        results = [a for a in results if (a.noted_date and str(a.noted_date) == noted_date)]
+
+    return results
+
+@app.get("/allergies/{allergy_id}", response_model=AllergyRead)
+def get_allergy(allergy_id: UUID):
+    if allergy_id not in allergies:
+        raise HTTPException(status_code=404, detail="Allergy not found")
+    return allergies[allergy_id]
+
+@app.patch("/allergies/{allergy_id}", response_model=AllergyRead)
+def update_allergy(allergy_id: UUID, update: AllergyUpdate):
+    if allergy_id not in allergies:
+        raise HTTPException(status_code=404, detail="Allergy not found")
+    stored = allergies[allergy_id].model_dump()
+    stored.update(update.model_dump(exclude_unset=True))
+    allergies[allergy_id] = AllergyRead(**stored)
+    return allergies[allergy_id]
+
+# -----------------------------------------------------------------------------
+# Medication endpoints
+# -----------------------------------------------------------------------------
+@app.post("/medications", response_model=MedicationRead, status_code=201)
+def create_medication(med: MedicationCreate):
+    if getattr(med, "person_id", None) and med.person_id not in persons:
+        raise HTTPException(status_code=400, detail="person_id does not exist")
+    if med.id in medications:
+        raise HTTPException(status_code=400, detail="Medication with this ID already exists")
+    medications[med.id] = MedicationRead(**med.model_dump())
+    return medications[med.id]
+
+@app.get("/medications", response_model=List[MedicationRead])
+def list_medications(
+    person_id: Optional[UUID] = Query(None, description="Filter by person_id"),
+    name: Optional[str] = Query(None, description="Filter by medication name"),
+    frequency: Optional[str] = Query(None, description="Filter by frequency"),
+    is_current: Optional[bool] = Query(None, description="Filter by current flag"),
+    start_date: Optional[str] = Query(None, description="Filter by exact start_date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="Filter by exact end_date (YYYY-MM-DD)"),
+):
+    results = list(medications.values())
+
+    if person_id is not None:
+        results = [m for m in results if m.person_id == person_id]
+    if name is not None:
+        results = [m for m in results if m.name == name]
+    if frequency is not None:
+        results = [m for m in results if m.frequency == frequency]
+    if is_current is not None:
+        results = [m for m in results if m.is_current == is_current]
+    if start_date is not None:
+        results = [m for m in results if (m.start_date and str(m.start_date) == start_date)]
+    if end_date is not None:
+        results = [m for m in results if (m.end_date and str(m.end_date) == end_date)]
+
+    return results
+
+@app.get("/medications/{medication_id}", response_model=MedicationRead)
+def get_medication(medication_id: UUID):
+    if medication_id not in medications:
+        raise HTTPException(status_code=404, detail="Medication not found")
+    return medications[medication_id]
+
+@app.patch("/medications/{medication_id}", response_model=MedicationRead)
+def update_medication(medication_id: UUID, update: MedicationUpdate):
+    if medication_id not in medications:
+        raise HTTPException(status_code=404, detail="Medication not found")
+    stored = medications[medication_id].model_dump()
+    stored.update(update.model_dump(exclude_unset=True))
+    medications[medication_id] = MedicationRead(**stored)
+    return medications[medication_id]
+
 # -----------------------------------------------------------------------------
 # Root
 # -----------------------------------------------------------------------------
