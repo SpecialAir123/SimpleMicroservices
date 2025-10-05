@@ -13,6 +13,8 @@ from typing import Optional
 
 from models.person import PersonCreate, PersonRead, PersonUpdate
 from models.address import AddressCreate, AddressRead, AddressUpdate
+from models.allergy import AllergyCreate, AllergyRead, AllergyUpdate
+from models.medication import MedicationCreate, MedicationRead, MedicationUpdate
 from models.health import Health
 
 port = int(os.environ.get("FASTAPIPORT", 8000))
@@ -22,6 +24,8 @@ port = int(os.environ.get("FASTAPIPORT", 8000))
 # -----------------------------------------------------------------------------
 persons: Dict[UUID, PersonRead] = {}
 addresses: Dict[UUID, AddressRead] = {}
+allergies: Dict[UUID, AllergyRead] = {}
+medications: Dict[UUID, MedicationRead] = {}
 
 app = FastAPI(
     title="Person/Address API",
